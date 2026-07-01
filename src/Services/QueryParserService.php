@@ -34,7 +34,7 @@ class QueryParserService
         $includes = array_filter(explode(',', $request->input('include', '')));
 
         if (!empty($includes)) {
-            $query->allowedIncludes($includes);
+            $query->allowedIncludes(...$includes);
         }
 
         return $this;
@@ -45,7 +45,7 @@ class QueryParserService
         $sorts = array_filter(explode(',', $request->input('sort', '')));
 
         if (!empty($sorts)) {
-            $query->allowedSorts($sorts);
+            $query->allowedSorts(...$sorts);
         }
 
         return $this;

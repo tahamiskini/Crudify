@@ -33,4 +33,24 @@ class CrudifyPolicy
     {
         return true;
     }
+
+    public function massCreate(?Model $user): bool
+    {
+        return true;
+    }
+
+    public function massUpdate(?Model $user): bool
+    {
+        return true;
+    }
+
+    public function massCreateOrUpdate(?Model $user): bool
+    {
+        return true;
+    }
+
+    public function massDelete(?Model $user): bool
+    {
+        return true;
+    }
 }

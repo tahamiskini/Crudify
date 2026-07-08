@@ -10,11 +10,15 @@ class CreateHasMany implements SyncStrategyContract
 {
     public function __invoke(Model $model, string $relationName, array $data): void
     {
-        if (!isset($data['id'])) {
+
+        $relation = $this->getRelation($model, $relationName);
+
+        $id = $data['id'] ?? null;
+        if ($id === null) {
+            $relation->create($data);
             return;
         }
 
-        $relation = $this->getRelation($model, $relationName);
         $subModelClass = $relation->getRelated();
 
         $id = $data['id'];

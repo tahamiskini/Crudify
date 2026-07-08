@@ -25,7 +25,7 @@ class RelationDataPayloadService
         );
 
         $newData = [
-            'id' => $data['id'],
+            'id' => $data['id'] ?? null,
             'relation' => $additionalData['relationField'],
             'childFqn' => get_class($relatedModel),
             'parentFqn' => get_class($model),

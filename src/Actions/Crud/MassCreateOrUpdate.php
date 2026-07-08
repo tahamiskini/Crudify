@@ -3,7 +3,6 @@
 namespace Taha\Crudify\Actions\Crud;
 
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
 use Taha\Crudify\Actions\ActionPayloadInterface;
 use Taha\Crudify\Actions\ActionResponse;
 use Taha\Crudify\Actions\ExecutableActionResponseContract;

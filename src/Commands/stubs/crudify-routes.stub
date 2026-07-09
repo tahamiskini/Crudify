@@ -1,0 +1,22 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Crudify Generated Routes
+|--------------------------------------------------------------------------
+|
+| Auto-generated CRUD routes. Regenerate with:
+|
+|   php artisan crudify:generate-routes
+|
+| This file is auto-generated. Do not edit manually.
+|
+*/
+
+Route::prefix('{{ routesPrefix }}')
+    ->middleware({{ middlewares }})
+    ->group(function () {
+{{ routes }}
+    });

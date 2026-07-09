@@ -72,11 +72,11 @@ class CrudifyServiceProvider extends ServiceProvider
             $def(['PUT', 'PATCH'], 'update', '/{id}');
             $def('DELETE', 'delete', '/{id}');
 
-            // Relation routes
-            $def('POST', 'addRelation', '/{id}/add-relation/{relation}');
-            $def('DELETE', 'removeRelation', '/{id}/remove-relation/{relation}/{relationId?}');
-            $def('POST', 'attachRelation', '/{id}/attach-relation/{relation}/{relationId}');
-            $def('DELETE', 'detachRelation', '/{id}/detach-relation/{relation}/{relationId}');
+            // Relation routes (param names must match controller: $relationField)
+            $def('POST', 'addRelation', '/{id}/add-relation/{relationField}');
+            $def('DELETE', 'removeRelation', '/{id}/remove-relation/{relationField}/{relationId?}');
+            $def('POST', 'attachRelation', '/{id}/attach-relation/{relationField}/{relationId}');
+            $def('DELETE', 'detachRelation', '/{id}/detach-relation/{relationField}/{relationId}');
         });
     }
 }

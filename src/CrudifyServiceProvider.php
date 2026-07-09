@@ -25,8 +25,6 @@ class CrudifyServiceProvider extends ServiceProvider
 
             return CrudifyPolicy::class;
         });
-
-        $this->registerRouteMacro();
     }
 
     public function register(): void
@@ -35,6 +33,8 @@ class CrudifyServiceProvider extends ServiceProvider
             __DIR__ . '/../config/crudify.php',
             'crudify'
         );
+
+        $this->registerRouteMacro();
 
         $this->commands([
             GenerateRoutesCommand::class,

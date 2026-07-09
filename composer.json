@@ -1,7 +1,7 @@
 {
-    "name": "taha/crudify",
+    "name": "tahamiskini/crudify",
     "description": "Generic CRUD controller for Laravel.",
-    "keywords": ["taha", "crudify", "laravel-crud"],
+    "keywords": ["crudify", "laravel-crud", "laravel"],
     "license": "MIT",
     "type": "library",
     "authors": [

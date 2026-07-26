@@ -53,4 +53,14 @@ class CrudifyPolicy
     {
         return true;
     }
+
+    public function restore(?Model $user, Model $model): bool
+    {
+        return true;
+    }
+
+    public function forceDelete(?Model $user, Model $model): bool
+    {
+        return true;
+    }
 }

@@ -65,6 +65,10 @@ class CrudifyServiceProvider extends ServiceProvider
             $def('DELETE', 'massDelete', '/mass-delete');
             $def('POST', 'massCreateOrUpdate', '/mass-create-or-update');
 
+            // Soft-delete routes (before {id} routes to avoid capture)
+            $def('POST', 'restore', '/restore/{id}');
+            $def('DELETE', 'forceDelete', '/force-delete/{id}');
+
             // Single-resource routes
             $def('GET', 'readMore');
             $def('GET', 'readOne', '/{id}');

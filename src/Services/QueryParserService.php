@@ -2,6 +2,7 @@
 
 namespace Taha\Crudify\Services;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\Request;
 use Spatie\QueryBuilder\AllowedSort;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -21,12 +22,43 @@ class QueryParserService
 
         $query = QueryBuilder::for($modelClass, $request);
 
-        $this->parseIncludes($request, $query)
+        $this->parseTrashed($request, $query)
+            ->parseIncludes($request, $query)
             ->parseSorts($request, $query);
 
         $this->filterParser->parse($request, $query);
 
         return $query;
+    }
+
+    public function findOrFail(Request $request, string $modelClass, string $id): mixed
+    {
+        $this->normalizeRequest($request);
+
+        $query = QueryBuilder::for($modelClass, $request);
+
+        $this->parseTrashed($request, $query);
+
+        $this->filterParser->parse($request, $query);
+
+        return $query->findOrFail($id);
+    }
+
+    protected function parseTrashed(Request $request, QueryBuilder $query): self
+    {
+        if (!in_array(SoftDeletes::class, class_uses_recursive($query->getModel()), true)) {
+            return $this;
+        }
+
+        $trashed = $request->input('trashed');
+
+        if ($trashed === 'only') {
+            $query->onlyTrashed();
+        } elseif ($trashed === 'with') {
+            $query->withTrashed();
+        }
+
+        return $this;
     }
 
     public function getFilterParser(): FilterParser

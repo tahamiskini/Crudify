@@ -18,11 +18,13 @@ use Taha\Crudify\Actions\Crud\Create;
 use Taha\Crudify\Actions\Crud\CrudActionPayload;
 use Taha\Crudify\Actions\Crud\Delete;
 use Taha\Crudify\Actions\Crud\DetachRelation;
+use Taha\Crudify\Actions\Crud\ForceDelete;
 use Taha\Crudify\Actions\Crud\MassCreate;
 use Taha\Crudify\Actions\Crud\MassCreateOrUpdate;
 use Taha\Crudify\Actions\Crud\MassDelete;
 use Taha\Crudify\Actions\Crud\MassUpdate;
 use Taha\Crudify\Actions\Crud\RemoveRelation;
+use Taha\Crudify\Actions\Crud\Restore;
 use Taha\Crudify\Actions\Crud\Update;
 use Taha\Crudify\Actions\ExecutableAction;
 use Taha\Crudify\Actions\ExecutableActionResponseContract;
@@ -43,8 +45,7 @@ class CrudifyController extends BaseController
     {
         $modelClass = $this->resolveModel();
         $modelInstance = $this->queryParser
-            ->parse($request, $modelClass)
-            ->findOrFail($id);
+            ->findOrFail($request, $modelClass, $id);
 
         $this->authorize('readOne', [$modelClass, $modelInstance]);
 
@@ -110,6 +111,32 @@ class CrudifyController extends BaseController
         $this->authorize('delete', [$modelClass, $instance]);
 
         $this->onDelete($this->createActionPayload($request, $instance));
+
+        return response()->json(null, Response::HTTP_NO_CONTENT);
+    }
+
+    public function restore(Request $request, string $id): CrudifyResource
+    {
+        $modelClass = $this->resolveModel();
+        $instance = $modelClass::query()->withTrashed()->findOrFail($id);
+
+        $this->authorize('restore', [$modelClass, $instance]);
+
+        $this->onRestore($this->createActionPayload($request, $instance));
+
+        $fresh = $instance->fresh();
+
+        return $this->createResource($fresh ?? $instance);
+    }
+
+    public function forceDelete(Request $request, string $id): JsonResponse
+    {
+        $modelClass = $this->resolveModel();
+        $instance = $modelClass::query()->withTrashed()->findOrFail($id);
+
+        $this->authorize('forceDelete', [$modelClass, $instance]);
+
+        $this->onForceDelete($this->createActionPayload($request, $instance));
 
         return response()->json(null, Response::HTTP_NO_CONTENT);
     }
@@ -292,6 +319,16 @@ class CrudifyController extends BaseController
         return $this->getDetachRelationAction()->run($actionPayload);
     }
 
+    protected function onRestore(ActionPayloadInterface $actionPayload): ExecutableActionResponseContract
+    {
+        return $this->getRestoreAction()->run($actionPayload);
+    }
+
+    protected function onForceDelete(ActionPayloadInterface $actionPayload): ExecutableActionResponseContract
+    {
+        return $this->getForceDeleteAction()->run($actionPayload);
+    }
+
     protected function getCreateAction(): ExecutableAction
     {
         return resolve(Create::class);
@@ -345,6 +382,16 @@ class CrudifyController extends BaseController
     protected function getDetachRelationAction(): ExecutableAction
     {
         return resolve(DetachRelation::class);
+    }
+
+    protected function getRestoreAction(): ExecutableAction
+    {
+        return resolve(Restore::class);
+    }
+
+    protected function getForceDeleteAction(): ExecutableAction
+    {
+        return resolve(ForceDelete::class);
     }
 
     protected function getModelFqn(): string

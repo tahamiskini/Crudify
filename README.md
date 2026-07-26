@@ -126,11 +126,13 @@ All endpoints are registered under the configured prefix (default: `api`).
 
 | Method | URI | Controller Method | Description |
 |---|---|---|---|
-| `GET` | `/api/posts` | `readMore` | Paginated list |
-| `GET` | `/api/posts/{id}` | `readOne` | Single resource |
+| `GET` | `/api/posts` | `readMore` | Paginated list (supports `?trashed=only\|with`) |
+| `GET` | `/api/posts/{id}` | `readOne` | Single resource (supports `?trashed=with`) |
 | `POST` | `/api/posts` | `create` | Create resource |
 | `PUT`/`PATCH` | `/api/posts/{id}` | `update` | Update resource |
 | `DELETE` | `/api/posts/{id}` | `delete` | Delete resource (returns 204) |
+| `POST` | `/api/posts/restore/{id}` | `restore` | Restore a soft-deleted resource |
+| `DELETE` | `/api/posts/force-delete/{id}` | `forceDelete` | Permanently delete a resource |
 
 **Response format** (single resource):
 ```json
@@ -292,6 +294,8 @@ Create a policy following the naming convention. Crudify supports these authoriz
 | `massUpdate` | `massUpdate` | Mass-updating resources |
 | `massDelete` | `massDelete` | Mass-deleting resources |
 | `massCreateOrUpdate` | `massCreateOrUpdate` | Upserting resources |
+| `restore` | `restore` | Restoring a soft-deleted resource |
+| `forceDelete` | `forceDelete` | Permanently deleting a resource |
 
 ```php
 <?php
@@ -346,6 +350,16 @@ class PostPolicy
     public function massCreateOrUpdate(?User $user): bool
     {
         return auth()->check();
+    }
+
+    public function restore(?User $user, Post $post): bool
+    {
+        return $user?->id === $post->user_id;
+    }
+
+    public function forceDelete(?User $user, Post $post): bool
+    {
+        return $user?->id === $post->user_id && $post->trashed();
     }
 }
 ```
@@ -465,6 +479,10 @@ Crudify dispatches events before and after each CRUD operation. All events carry
 | `CrudModelAfterAttachRelation` | `AttachRelation::run()` |
 | `CrudModelBeforeDetachRelation` | `DetachRelation::run()` |
 | `CrudModelAfterDetachRelation` | `DetachRelation::run()` |
+| `CrudModelBeforeRestore` | `Restore::run()` |
+| `CrudModelAfterRestore` | `Restore::run()` |
+| `CrudModelBeforeForceDelete` | `ForceDelete::run()` |
+| `CrudModelAfterForceDelete` | `ForceDelete::run()` |
 
 **Example listener:**
 ```php

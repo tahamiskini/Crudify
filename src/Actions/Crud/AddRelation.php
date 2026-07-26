@@ -10,7 +10,7 @@ use Taha\Crudify\Events\CrudModelBeforeAddRelation;
 use Taha\Crudify\Services\Crud\Relations\EntityRelationsService;
 use Taha\Crudify\Services\Crud\Relations\RelationDataPayloadService;
 
-class AddRelation extends CrudAction
+    class AddRelation extends CrudAction
 {
     public function __construct(
         protected EntityRelationsService $entityRelationService,

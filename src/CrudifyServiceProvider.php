@@ -48,14 +48,45 @@ class CrudifyServiceProvider extends ServiceProvider
             $namespace = $options['namespace'] ?? config('crudify.namespace', 'App');
             $modelName = class_basename($model);
 
-            $def = function (array|string $method, string $action, string $suffix = '') use ($controller, $modelName, $namespace, $resource) {
-                $uri = $resource . $suffix;
+            $isNested = ModelHelper::isNested($resource);
+
+            $parentModelClass = null;
+            $parentParam = null;
+            $foreignKey = null;
+            $prefix = '';
+
+            if ($isNested) {
+                $parentResource = ModelHelper::getParentResource($resource);
+                $parentModelClass = $options['parent_model'] ?? ModelHelper::getParentModelFqn($resource, $namespace);
+                $parentParam = ModelHelper::getParentRouteParam($resource);
+                $foreignKey = $options['foreign_key'] ?? ModelHelper::getForeignKey($parentResource);
+                $childResource = ModelHelper::getChildResource($resource);
+                $prefix = '{' . $parentParam . '}/';
+            } else {
+                $parentResource = null;
+                $childResource = $resource;
+            }
+
+            $def = function (array|string $method, string $action, string $suffix = '') use ($controller, $modelName, $namespace, $childResource, $isNested, $parentModelClass, $parentParam, $foreignKey, $prefix, $parentResource) {
+                $uri = $prefix . $childResource . $suffix;
 
                 $route = Route::match((array) $method, $uri, [$controller, $action]);
 
+                $actionData = [
+                    'model' => $modelName,
+                    'namespace' => $namespace,
+                ];
+
+                if ($isNested) {
+                    $actionData['parentModel'] = $parentModelClass;
+                    $actionData['parentParam'] = $parentParam;
+                    $actionData['foreignKey'] = $foreignKey;
+                    $actionData['parentResource'] = $parentResource;
+                }
+
                 $route->setAction(array_merge(
                     $route->getAction(),
-                    ['model' => $modelName, 'namespace' => $namespace]
+                    $actionData
                 ));
             };
 

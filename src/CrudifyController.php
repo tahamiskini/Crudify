@@ -2,6 +2,7 @@
 
 namespace Taha\Crudify;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
@@ -44,8 +45,9 @@ class CrudifyController extends BaseController
     public function readOne(Request $request, string $id): CrudifyResource
     {
         $modelClass = $this->resolveModel();
-        $modelInstance = $this->queryParser
-            ->findOrFail($request, $modelClass, $id);
+        $query = $this->queryParser->parse($request, $modelClass);
+        $this->scopeQueryToParent($query);
+        $modelInstance = $query->findOrFail($id);
 
         $this->authorize('readOne', [$modelClass, $modelInstance]);
 
@@ -58,10 +60,11 @@ class CrudifyController extends BaseController
 
         $this->authorize('readMore', $modelClass);
 
+        $query = $this->queryParser->parse($request, $modelClass);
+        $this->scopeQueryToParent($query);
+
         return $this->createResourceCollection(
-            $this->queryParser
-                ->parse($request, $modelClass)
-                ->paginate($this->perPage())
+            $query->paginate($this->perPage())
         );
     }
 
@@ -90,7 +93,7 @@ class CrudifyController extends BaseController
     public function update(Request $request, string $id): CrudifyResource
     {
         $modelClass = $this->resolveModel();
-        $instance = $modelClass::query()->findOrFail($id);
+        $instance = $this->newModelQuery($modelClass)->findOrFail($id);
 
         $this->authorize('update', [$modelClass, $instance]);
 
@@ -106,7 +109,7 @@ class CrudifyController extends BaseController
     public function delete(Request $request, string $id): JsonResponse
     {
         $modelClass = $this->resolveModel();
-        $instance = $modelClass::query()->findOrFail($id);
+        $instance = $this->newModelQuery($modelClass)->findOrFail($id);
 
         $this->authorize('delete', [$modelClass, $instance]);
 
@@ -118,7 +121,7 @@ class CrudifyController extends BaseController
     public function restore(Request $request, string $id): CrudifyResource
     {
         $modelClass = $this->resolveModel();
-        $instance = $modelClass::query()->withTrashed()->findOrFail($id);
+        $instance = $this->newModelQuery($modelClass)->withTrashed()->findOrFail($id);
 
         $this->authorize('restore', [$modelClass, $instance]);
 
@@ -132,7 +135,7 @@ class CrudifyController extends BaseController
     public function forceDelete(Request $request, string $id): JsonResponse
     {
         $modelClass = $this->resolveModel();
-        $instance = $modelClass::query()->withTrashed()->findOrFail($id);
+        $instance = $this->newModelQuery($modelClass)->withTrashed()->findOrFail($id);
 
         $this->authorize('forceDelete', [$modelClass, $instance]);
 
@@ -150,7 +153,8 @@ class CrudifyController extends BaseController
         $this->resolveRequest();
 
         $model = new $modelClass;
-        $payload = $this->createActionPayload($request, $model, $request->all());
+        $data = $this->requestData();
+        $payload = $this->createActionPayload($request, $model, $data);
 
         $this->onMassCreate($payload);
 
@@ -166,7 +170,8 @@ class CrudifyController extends BaseController
         $this->resolveRequest();
 
         $model = new $modelClass;
-        $payload = $this->createActionPayload($request, $model, $request->all());
+        $data = $this->requestData();
+        $payload = $this->createActionPayload($request, $model, $data);
 
         $this->onMassUpdate($payload);
 
@@ -180,7 +185,8 @@ class CrudifyController extends BaseController
         $this->authorize('massDelete', $modelClass);
 
         $model = new $modelClass;
-        $payload = $this->createActionPayload($request, $model, $request->all());
+        $data = $this->requestData();
+        $payload = $this->createActionPayload($request, $model, $data);
 
         $this->onMassDelete($payload);
 
@@ -196,7 +202,8 @@ class CrudifyController extends BaseController
         $this->resolveRequest();
 
         $model = new $modelClass;
-        $payload = $this->createActionPayload($request, $model, $request->all());
+        $data = $this->requestData();
+        $payload = $this->createActionPayload($request, $model, $data);
 
         $this->onMassCreateOrUpdate($payload);
 
@@ -206,7 +213,7 @@ class CrudifyController extends BaseController
     public function addRelation(Request $request, string $id, string $relationField): CrudifyResource
     {
         $modelClass = $this->resolveModel();
-        $instance = $modelClass::query()->findOrFail($id);
+        $instance = $this->newModelQuery($modelClass)->findOrFail($id);
 
         $this->authorize('update', [$modelClass, $instance]);
 
@@ -221,7 +228,7 @@ class CrudifyController extends BaseController
     public function removeRelation(Request $request, string $id, string $relationField, ?string $relationId = null): CrudifyResource
     {
         $modelClass = $this->resolveModel();
-        $instance = $modelClass::query()->findOrFail($id);
+        $instance = $this->newModelQuery($modelClass)->findOrFail($id);
 
         $this->authorize('update', [$modelClass, $instance]);
 
@@ -237,7 +244,7 @@ class CrudifyController extends BaseController
     public function attachRelation(string $id, string $relationField, string $relationId): CrudifyResource
     {
         $modelClass = $this->resolveModel();
-        $instance = $modelClass::query()->findOrFail($id);
+        $instance = $this->newModelQuery($modelClass)->findOrFail($id);
 
         $this->authorize('update', [$modelClass, $instance]);
 
@@ -252,7 +259,7 @@ class CrudifyController extends BaseController
     public function detachRelation(string $id, string $relationField, string $relationId): CrudifyResource
     {
         $modelClass = $this->resolveModel();
-        $instance = $modelClass::query()->findOrFail($id);
+        $instance = $this->newModelQuery($modelClass)->findOrFail($id);
 
         $this->authorize('update', [$modelClass, $instance]);
 
@@ -436,6 +443,44 @@ class CrudifyController extends BaseController
             : self::PER_PAGE;
     }
 
+    protected function isNested(): bool
+    {
+        return $this->getRoute()->getAction('parentModel') !== null;
+    }
+
+    protected function resolveParentModel(): Model
+    {
+        $route = $this->getRoute();
+        $parentModelClass = $route->getAction('parentModel');
+        $parentParam = $route->getAction('parentParam');
+
+        return $parentModelClass::findOrFail($route->parameter($parentParam));
+    }
+
+    protected function getForeignKey(): ?string
+    {
+        return $this->getRoute()->getAction('foreignKey');
+    }
+
+    protected function newModelQuery(string $modelClass): Builder
+    {
+        $query = $modelClass::query();
+
+        $this->scopeQueryToParent($query);
+
+        return $query;
+    }
+
+    protected function scopeQueryToParent($query): void
+    {
+        if (!$this->isNested()) {
+            return;
+        }
+
+        $parent = $this->resolveParentModel();
+        $query->where($this->getForeignKey(), $parent->getKey());
+    }
+
     protected function createResource(Model $resource): CrudifyResource
     {
         return new CrudifyResource($resource);
@@ -457,7 +502,14 @@ class CrudifyController extends BaseController
 
     protected function requestData(): array
     {
-        return request()->all();
+        $data = request()->all();
+
+        if ($this->isNested()) {
+            $parent = $this->resolveParentModel();
+            $data[$this->getForeignKey()] = $parent->getKey();
+        }
+
+        return $data;
     }
 
     private function getRoute(): Route

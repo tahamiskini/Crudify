@@ -3,21 +3,12 @@
 namespace Taha\Crudify\Services\Crud\Relations;
 
 use Illuminate\Database\Eloquent\Model;
-use Taha\Crudify\Services\RelationFieldCheckerService;
 
 class EntityRelationsService
 {
     public function __construct(
-        protected RelationFieldCheckerService $relationFieldCheckerService,
         protected SyncRelationService $syncRelationService,
     ) {
-    }
-
-    public function fillRelationships(Model $model, array $data): void
-    {
-        foreach ($data as $field => $value) {
-            $this->syncRelationService->applySync($model, $field, $value);
-        }
     }
 
     public function addRelation(Model $model, array $data, array $params): void

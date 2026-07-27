@@ -42,25 +42,4 @@ return [
     |
     */
     'merge_model_data_to_request' => false,
-
-    /*
-    |--------------------------------------------------------------------------
-    | Auto Sync Parent Relations
-    |--------------------------------------------------------------------------
-    |
-    | Automatically resolve parent IDs for HasMany relations based on
-    | the relationship hierarchy.
-    |
-    */
-    'auto_sync_parent_relations' => false,
-
-    /*
-    |--------------------------------------------------------------------------
-    | Sync Parent Relations Max Depth
-    |--------------------------------------------------------------------------
-    |
-    | Maximum depth for recursive parent relation resolution.
-    |
-    */
-    'sync_parent_relations_max_depth' => 5,
 ];

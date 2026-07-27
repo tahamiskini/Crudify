@@ -13,39 +13,6 @@ class EntityRelationsService
     ) {
     }
 
-    public function resolveRelationFields(Model $model, array $data): array
-    {
-        $parsedData = [];
-        $parsedRelationData = [];
-
-        foreach ($data as $key => $item) {
-            if (!$model->isRelation($key)) {
-                $parsedData[$key] = $item;
-                continue;
-            }
-
-            $foreignKey = $key . '_id';
-
-            $isForeignKeyFillable = $model->isFillable($foreignKey);
-
-            if ($isForeignKeyFillable && $model->isFillable($key . '_type')) {
-                $parsedRelationData[$key] = $item;
-                continue;
-            }
-
-            if ($isForeignKeyFillable) {
-                $parsedData[$foreignKey] = (is_array($item) && array_key_exists('id', $item)) ? $item['id'] : $item;
-                continue;
-            }
-
-            if (!$model->isFillable($key) && $model->isGuarded($foreignKey)) {
-                $parsedRelationData[$key] = $item;
-            }
-        }
-
-        return [$parsedData, $parsedRelationData];
-    }
-
     public function fillRelationships(Model $model, array $data): void
     {
         foreach ($data as $field => $value) {
